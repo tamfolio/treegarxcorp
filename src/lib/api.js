@@ -167,6 +167,80 @@ export const authAPI = {
     return data
   },
 
+  // Forgot password - Send OTP to email
+  forgotPassword: async (email) => {
+    const url = `${API_BASE_URL}/auth/forgot-password`
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new APIError(
+          data.message || 'Failed to send reset email',
+          response.status,
+          data
+        )
+      }
+      
+      return data
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      
+      throw new APIError(error.message || 'Failed to send reset email', 0, null)
+    }
+  },
+
+  // Reset password with OTP
+  resetPassword: async (resetData) => {
+    const url = `${API_BASE_URL}/auth/reset-password`
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          token: resetData.token,
+          email: resetData.email,
+          newPassword: resetData.newPassword,
+        }),
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new APIError(
+          data.message || 'Failed to reset password',
+          response.status,
+          data
+        )
+      }
+      
+      return data
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      
+      throw new APIError(error.message || 'Failed to reset password', 0, null)
+    }
+  },
+
   // Refresh token function
   refreshToken: async (refreshToken) => {
     const data = await apiRequest('/auth/refresh', {

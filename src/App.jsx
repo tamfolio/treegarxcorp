@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './Pages/Auth/Login'
 import Dashboard from './Pages/Dashboard'
 import OTPVerification from './Pages/Auth/OtpVerification'
+import ForgotPasswordFlow from './Pages/Auth/ForgotPasswordFlow'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -40,6 +41,10 @@ function App() {
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
+            
+            {/* Forgot Password Flow */}
+            <Route path="/forgot-password" element={<ForgotPasswordFlow />} />
+            
             <Route
               path="/verify"
               element={
