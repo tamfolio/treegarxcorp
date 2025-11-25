@@ -13,6 +13,8 @@ const Transactions = () => {
     exportType: "pdf",
     email: "",
   });
+  const [isDownloadingStatement, setIsDownloadingStatement] = useState(false);
+  const [downloadResult, setDownloadResult] = useState(null); // { type: 'success' | 'error', message: string }
 
   const handleStatementDownload = async () => {
     const params = new URLSearchParams({
@@ -23,7 +25,22 @@ const Transactions = () => {
       email: statementParams.email,
     });
 
+    setIsDownloadingStatement(true);
+    setDownloadResult(null);
+
     try {
+      // Get token from localStorage using the correct key
+      const token = localStorage.getItem('authToken');
+      
+      if (!token) {
+        setDownloadResult({
+          type: 'error',
+          message: 'Authentication token not found. Please login again.'
+        });
+        setIsDownloadingStatement(false);
+        return;
+      }
+
       const response = await fetch(
         `https://treegar-accounts-api.treegar.com:8443/api/company/transactions/statement?${params}`,
         {
@@ -35,13 +52,30 @@ const Transactions = () => {
         }
       );
 
-      if (!response.ok) throw new Error("Failed to download statement");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Server error: ${response.status}`);
+      }
 
-      alert("Statement sent to email successfully!");
-      setShowStatementModal(false);
+      setDownloadResult({
+        type: 'success',
+        message: 'Statement sent to your email successfully! Please check your inbox.'
+      });
+
+      // Close modal after a delay
+      setTimeout(() => {
+        setShowStatementModal(false);
+        setDownloadResult(null);
+      }, 3000);
+
     } catch (error) {
-      console.error(error);
-      alert("Error downloading statement");
+      console.error('Statement download error:', error);
+      setDownloadResult({
+        type: 'error',
+        message: error.message || 'Failed to download statement. Please try again.'
+      });
+    } finally {
+      setIsDownloadingStatement(false);
     }
   };
 
@@ -203,8 +237,8 @@ const Transactions = () => {
         <StatementModal
           isOpen={showStatementModal}
           onClose={() => setShowStatementModal(false)}
-          params={statementParams}
-          setParams={setStatementParams}
+          statementParams={statementParams}
+          setStatementParams={setStatementParams}
           onDownload={handleStatementDownload}
         />
       </div>
@@ -585,6 +619,20 @@ const Transactions = () => {
           </div>
         </div>
       </div>
+
+      {/* Statement Modal - Fixed prop names */}
+      <StatementModal
+        isOpen={showStatementModal}
+        onClose={() => {
+          setShowStatementModal(false);
+          setDownloadResult(null);
+        }}
+        statementParams={statementParams}
+        setStatementParams={setStatementParams}
+        onDownload={handleStatementDownload}
+        isLoading={isDownloadingStatement}
+        result={downloadResult}
+      />
     </div>
   );
 };

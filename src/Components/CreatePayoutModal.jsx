@@ -12,7 +12,7 @@ const CreatePayoutModal = ({
   const [isResolvingAccount, setIsResolvingAccount] = useState(false);
   const [accountResolved, setAccountResolved] = useState(false);
   const [resolvedAccountName, setResolvedAccountName] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [bankSearchTerm, setBankSearchTerm] = useState("");
   const [showBankDropdown, setShowBankDropdown] = useState(false);
   const [selectedBank, setSelectedBank] = useState(null);
 
@@ -22,39 +22,28 @@ const CreatePayoutModal = ({
   // Account resolution mutation
   const resolveAccountMutation = useResolveAccount();
 
+  // Filter banks - simple and effective like the working version
   const filteredBanks = banks
-    .filter((bank) => {
-      const term = searchTerm.toLowerCase();
-      return (
-        bank.bankName?.toLowerCase().includes(term) ||
-        bank.bankCode?.toLowerCase().includes(term)
-      );
-    })
+    .filter(bank => 
+      bank.bankName.toLowerCase().includes(bankSearchTerm.toLowerCase())
+    )
     .sort((a, b) => {
-      const term = searchTerm.toLowerCase();
-
+      const term = bankSearchTerm.toLowerCase();
       const aName = a.bankName.toLowerCase();
       const bName = b.bankName.toLowerCase();
-
-      // 1️⃣ Exact match comes first
-      if (aName === term && bName !== term) return -1;
-      if (bName === term && aName !== term) return 1;
-
-      // 2️⃣ Starts-with comes second
-      const aStarts = aName.startsWith(term);
-      const bStarts = bName.startsWith(term);
-
-      if (aStarts && !bStarts) return -1;
-      if (bStarts && !aStarts) return 1;
-
-      // 3️⃣ Shorter name (often the real bank) comes next
-      if (aName.length !== bName.length) {
-        return aName.length - bName.length;
-      }
-
-      // 4️⃣ Alphabetical fallback
+      
+      // Exact match first
+      if (aName === term) return -1;
+      if (bName === term) return 1;
+      
+      // Starts with next
+      if (aName.startsWith(term) && !bName.startsWith(term)) return -1;
+      if (bName.startsWith(term) && !aName.startsWith(term)) return 1;
+      
+      // Alphabetical fallback
       return aName.localeCompare(bName);
-    });
+    })
+    .slice(0, 10); // Limit results for better UX
 
   // Format amount input with commas
   const formatAmountDisplay = (value) => {
@@ -83,36 +72,33 @@ const CreatePayoutModal = ({
     }));
   };
 
-  // Handle bank selection
+  // Handle bank selection - mirror working version
   const handleBankSelect = (bank) => {
+    setSelectedBank(bank);
+    setBankSearchTerm(bank.bankName);
     setFormData((prev) => ({
       ...prev,
       beneficiaryBankCode: bank.bankCode,
       bankName: bank.bankName,
     }));
-
-    setSelectedBank(bank);
     setShowBankDropdown(false);
-    setSearchTerm(""); // FIXED
-
     setAccountResolved(false);
     setResolvedAccountName("");
   };
 
-  const handleSearch = (value) => {
-    setSearchTerm(value);
+  // Handle bank search - mirror working version
+  const handleBankSearch = (value) => {
+    setBankSearchTerm(value);
     setShowBankDropdown(true);
-
-    // If user types away from selected bank → clear selection
+    
+    // Clear selection if user is typing something different
     if (selectedBank && value !== selectedBank.bankName) {
       setSelectedBank(null);
-
       setFormData((prev) => ({
         ...prev,
         beneficiaryBankCode: "",
         bankName: "",
       }));
-
       setAccountResolved(false);
       setResolvedAccountName("");
     }
@@ -164,7 +150,7 @@ const CreatePayoutModal = ({
   // Auto-resolve account when both account number and bank code are available
   useEffect(() => {
     if (
-      formData.beneficiaryAccountNumber?.length >= 10 &&
+      formData.beneficiaryAccountNumber?.length === 10 &&
       formData.beneficiaryBankCode
     ) {
       const timer = setTimeout(() => {
@@ -192,14 +178,15 @@ const CreatePayoutModal = ({
       setAccountResolved(false);
       setResolvedAccountName("");
       setShowBankDropdown(false);
-      setSearchTerm(""); // FIXED
+      setBankSearchTerm("");
+      setSelectedBank(null);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="treegar-card p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-white">
@@ -208,6 +195,7 @@ const CreatePayoutModal = ({
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
+            disabled={mutation.isPending}
           >
             <svg
               className="w-6 h-6"
@@ -226,7 +214,7 @@ const CreatePayoutModal = ({
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
-          {/* Amount Input */}
+          {/* Amount Input - Fixed overlapping Naira symbol */}
           <div>
             <label
               htmlFor="amount"
@@ -235,7 +223,7 @@ const CreatePayoutModal = ({
               Amount (NGN)
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm pointer-events-none z-10">
                 ₦
               </span>
               <input
@@ -246,96 +234,75 @@ const CreatePayoutModal = ({
                 onChange={handleAmountChange}
                 required
                 disabled={mutation.isPending}
-                className="input-treegar pl-8 w-full disabled:opacity-50"
+                className="input-treegar pl-9 w-full disabled:opacity-50"
                 placeholder="0.00"
+                style={{ paddingLeft: '2.25rem' }} // Ensure enough space for Naira symbol
               />
             </div>
             {formData.amount > 0 && (
               <p className="text-xs text-gray-400 mt-1">
-                Amount: ₦
-                {parseAmount(formData.displayAmount || "0").toLocaleString()}
+                Amount: ₦{parseAmount(formData.displayAmount || "0").toLocaleString()}
               </p>
             )}
           </div>
 
-          {/* Bank Selection */}
-          {/* Bank Selection */}
-          <div>
+          {/* Bank Selection - Mirrored from working version */}
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Beneficiary Bank
+              Beneficiary Bank *
             </label>
-
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowBankDropdown(!showBankDropdown)}
-                disabled={banksLoading || mutation.isPending}
-                className="input-treegar w-full text-left flex items-center justify-between"
-              >
-                <span className={selectedBank ? "text-white" : "text-gray-400"}>
-                  {selectedBank ? selectedBank.bankName : "Select a bank..."}
-                </span>
-
-                <svg
-                  className={`w-4 h-4 transition-transform ${
-                    showBankDropdown ? "rotate-180" : ""
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-
-              {showBankDropdown && (
-                <div className="absolute top-full left-0 right-0 bg-dark-700 border border-dark-600 rounded-lg mt-1 max-h-60 overflow-y-auto z-10">
-                  {/* SEARCH BAR */}
-                  <div className="p-3 border-b border-dark-600">
-                    <input
-                      type="text"
-                      placeholder="Search banks..."
-                      value={searchTerm}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      autoFocus
-                      className="w-full bg-dark-800 border border-dark-600 text-white text-sm rounded px-3 py-2"
-                    />
+            <input
+              type="text"
+              value={bankSearchTerm}
+              onChange={(e) => handleBankSearch(e.target.value)}
+              onFocus={() => setShowBankDropdown(true)}
+              disabled={banksLoading || mutation.isPending}
+              placeholder="Search for a bank..."
+              className="input-treegar w-full disabled:opacity-50"
+            />
+            
+            {/* Bank Dropdown */}
+            {showBankDropdown && (
+              <div className="absolute z-20 w-full mt-1 bg-dark-700 border border-dark-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {banksLoading ? (
+                  <div className="px-4 py-8 text-center">
+                    <svg className="animate-spin h-5 w-5 mx-auto mb-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <div className="text-gray-400 text-sm">Loading banks...</div>
                   </div>
-
-                  {/* LIST */}
-                  <div className="max-h-60 overflow-y-auto divide-y divide-dark-600">
-                    {filteredBanks.length ? (
-                      filteredBanks.map((bank) => (
-                        <button
-                          key={bank.bankCode}
-                          onClick={() => handleBankSelect(bank)}
-                          type="button"
-                          className="w-full text-left px-4 py-3 hover:bg-dark-600 flex justify-between"
-                        >
-                          <div>
-                            <div className="text-white text-sm">
-                              {bank.bankName}
-                            </div>
-                            <div className="text-gray-400 text-xs">
-                              {bank.bankCode}
-                            </div>
-                          </div>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-4 py-3 text-gray-400 text-sm">
-                        No banks found
-                      </div>
-                    )}
+                ) : filteredBanks.length > 0 ? (
+                  filteredBanks.map((bank) => (
+                    <button
+                      key={bank.bankCode}
+                      type="button"
+                      onClick={() => handleBankSelect(bank)}
+                      className="w-full px-3 py-2 text-left hover:bg-dark-600 focus:bg-dark-600 focus:outline-none border-b border-dark-600 last:border-b-0"
+                    >
+                      <div className="text-sm font-medium text-white">{bank.bankName}</div>
+                      <div className="text-xs text-gray-400">{bank.bankCode}</div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-3 py-4 text-sm text-gray-400 text-center">
+                    {bankSearchTerm ? `No banks found matching "${bankSearchTerm}"` : "Start typing to search banks"}
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
+            
+            {/* Click outside to close dropdown */}
+            {showBankDropdown && (
+              <div 
+                className="fixed inset-0 z-10" 
+                onClick={() => setShowBankDropdown(false)}
+              ></div>
+            )}
+            
+            {selectedBank && (
+              <p className="text-green-400 text-xs mt-1">✓ {selectedBank.bankName} selected</p>
+            )}
           </div>
 
           {/* Account Number Input */}
@@ -356,7 +323,7 @@ const CreatePayoutModal = ({
                 required
                 disabled={mutation.isPending}
                 className="input-treegar w-full pr-12 disabled:opacity-50"
-                placeholder="Enter account number"
+                placeholder="Enter 10-digit account number"
                 maxLength={10}
               />
               {formData.beneficiaryAccountNumber &&
@@ -411,6 +378,11 @@ const CreatePayoutModal = ({
                 Failed to resolve account. Please check the details.
               </p>
             )}
+            {isResolvingAccount && (
+              <p className="text-xs text-blue-400 mt-1">
+                🔄 Resolving account name...
+              </p>
+            )}
           </div>
 
           {/* Narration Input */}
@@ -421,16 +393,16 @@ const CreatePayoutModal = ({
             >
               Narration
             </label>
-            <input
-              type="text"
+            <textarea
               id="narration"
               name="narration"
               value={formData.narration || ""}
               onChange={handleInputChange}
               required
               disabled={mutation.isPending}
-              className="input-treegar w-full disabled:opacity-50"
-              placeholder="Payment description"
+              rows="3"
+              className="input-treegar w-full disabled:opacity-50 resize-none"
+              placeholder="Enter payment description"
               maxLength={100}
             />
           </div>
@@ -483,7 +455,8 @@ const CreatePayoutModal = ({
                 !accountResolved ||
                 !formData.amount ||
                 formData.amount <= 0 ||
-                !formData.narration
+                !formData.narration ||
+                !formData.beneficiaryBankCode
               }
               className="flex-1 btn-treegar-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >

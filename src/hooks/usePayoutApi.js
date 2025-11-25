@@ -198,23 +198,24 @@ export const useApprovePayout = () => {
   });
 };
 
-// Hook to reject a payout
+// Hook to reject a payout - Updated to accept reason
 export const useRejectPayout = () => {
   const queryClient = useQueryClient();
   const { isAuthenticated, token } = useAuth();
   
   return useMutation({
-    mutationFn: async (payoutId) => {
+    mutationFn: async ({ payoutId, reason }) => {
       if (!token || !isAuthenticated) {
         throw new Error('Authentication required');
       }
 
       const response = await apiCall(`/payouts/${payoutId}/reject`, token, {
         method: 'POST',
+        body: JSON.stringify({ reason }),
       });
       return response.data;
     },
-    onSuccess: (data, payoutId) => {
+    onSuccess: (data, { payoutId }) => {
       // Invalidate and refetch payouts data
       queryClient.invalidateQueries({ queryKey: ['payouts'] });
       queryClient.invalidateQueries({ queryKey: ['payout', payoutId] });

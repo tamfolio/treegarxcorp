@@ -12,6 +12,7 @@ import {
 } from "../hooks/usePayoutApi";
 import CreatePayoutModal from "../Components/CreatePayoutModal";
 import PayoutDetailsModal from "../Components/PayoutDetailsModal";
+import RejectPayoutModal from "../Components/RejectPayoutModal";
 
 const Payouts = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -20,7 +21,9 @@ const Payouts = () => {
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedPayoutId, setSelectedPayoutId] = useState(null);
+  const [payoutToReject, setPayoutToReject] = useState(null);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -134,12 +137,26 @@ const Payouts = () => {
     }
   };
 
-  // Handle payout rejection
-  const handleRejectPayout = async (payoutId) => {
+  // Handle opening rejection modal
+  const handleOpenRejectModal = (payout) => {
+    setPayoutToReject(payout);
+    setShowRejectModal(true);
+  };
+
+  // Handle closing rejection modal
+  const handleCloseRejectModal = () => {
+    setShowRejectModal(false);
+    setPayoutToReject(null);
+  };
+
+  // Handle payout rejection with reason
+  const handleRejectPayout = async (payoutId, reason) => {
     try {
-      await rejectPayoutMutation.mutateAsync(payoutId);
+      await rejectPayoutMutation.mutateAsync({ payoutId, reason });
+      handleCloseRejectModal();
     } catch (error) {
       console.error("Rejection failed:", error);
+      // Note: Error handling is already done in the mutation's onError callback
     }
   };
 
@@ -519,7 +536,7 @@ const Payouts = () => {
                               </svg>
                             </button>
                             <button
-                              onClick={() => handleRejectPayout(payout.id)}
+                              onClick={() => handleOpenRejectModal(payout)}
                               disabled={rejectPayoutMutation.isPending}
                               className="text-red-500 hover:text-red-400 transition-colors disabled:opacity-50"
                               title="Reject"
@@ -653,9 +670,18 @@ const Payouts = () => {
         payout={selectedPayout}
         isLoading={detailsLoading}
         onApprove={handleApprovePayout}
-        onReject={handleRejectPayout}
+        onReject={() => handleOpenRejectModal(selectedPayout)}
         approveMutation={approvePayoutMutation}
         rejectMutation={rejectPayoutMutation}
+      />
+
+      {/* Reject Payout Modal */}
+      <RejectPayoutModal
+        isOpen={showRejectModal}
+        onClose={handleCloseRejectModal}
+        onConfirm={handleRejectPayout}
+        payout={payoutToReject}
+        isLoading={rejectPayoutMutation.isPending}
       />
     </div>
   );
