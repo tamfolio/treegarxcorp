@@ -1,0 +1,327 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* Treegar X Corp Theme Configuration for Tailwind v4 */
+@theme {
+  /* Custom Font Family */
+  --font-family-sans: Rajdhani, "Arial Narrow", sans-serif;
+  --font-family-rajdhani: Rajdhani, "Arial Narrow", sans-serif;
+
+  /* Treegar X Corp Color Palette */
+  --color-primary-50: #ecfeff;
+  --color-primary-100: #cffafe;
+  --color-primary-200: #a5f3fc;
+  --color-primary-300: #67e8f9;
+  --color-primary-400: #22d3ee;
+  --color-primary-500: #00FFFF;
+  --color-primary-600: #0891b2;
+  --color-primary-700: #0e7490;
+  --color-primary-800: #155e75;
+  --color-primary-900: #164e63;
+
+  --color-secondary-50: #faf5ff;
+  --color-secondary-100: #f3e8ff;
+  --color-secondary-200: #e9d5ff;
+  --color-secondary-300: #d8b4fe;
+  --color-secondary-400: #c084fc;
+  --color-secondary-500: #a855f7;
+  --color-secondary-600: #9333ea;
+  --color-secondary-700: #7c3aed;
+  --color-secondary-800: #6b21a8;
+  --color-secondary-900: #581c87;
+
+  --color-dark-50: #f8fafc;
+  --color-dark-100: #f1f5f9;
+  --color-dark-200: #e2e8f0;
+  --color-dark-300: #cbd5e1;
+  --color-dark-400: #94a3b8;
+  --color-dark-500: #64748b;
+  --color-dark-600: #475569;
+  --color-dark-700: #334155;
+  --color-dark-800: #1e293b;
+  --color-dark-900: #0f172a;
+  --color-dark-950: #020617;
+
+  /* Accent Colors */
+  --color-accent-cyan: #00FFFF;
+  --color-accent-purple: #a855f7;
+  --color-accent-green: #10b981;
+  --color-accent-blue: #3b82f6;
+
+  /* Custom Box Shadows */
+  --shadow-neon-cyan: 0 0 20px rgba(0, 255, 255, 0.3);
+  --shadow-neon-purple: 0 0 20px rgba(168, 85, 247, 0.3);
+  --shadow-glow: 0 0 40px rgba(0, 255, 255, 0.1);
+
+  /* Custom Animations */
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-particles: particles 20s linear infinite;
+}
+
+/* Global Styles */
+* {
+  font-family: Rajdhani, "Arial Narrow", sans-serif;
+}
+
+body {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+/* Scrollbar styling for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Treegar X Corp Component Styles */
+
+/* Neon text effects */
+.text-neon-cyan {
+  color: #00FFFF;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.text-neon-purple {
+  color: #a855f7;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+}
+
+/* Glowing borders */
+.border-glow-cyan {
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+.border-glow-purple {
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.1);
+}
+
+/* Card styles */
+.treegar-card {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid #475569;
+  border-radius: 0.5rem;
+  backdrop-filter: blur(12px);
+}
+
+.treegar-card-hover {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid #475569;
+  border-radius: 0.5rem;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+}
+
+.treegar-card-hover:hover {
+  border-color: #00FFFF;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+/* Button styles */
+.btn-treegar-primary {
+  background: linear-gradient(90deg, #00FFFF 0%, #22d3ee 100%);
+  color: #0f172a;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  transform: scale(1);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-treegar-primary:hover {
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.btn-treegar-secondary {
+  background: linear-gradient(90deg, #a855f7 0%, #c084fc 100%);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  transform: scale(1);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-treegar-secondary:hover {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+  transform: scale(1.05);
+}
+
+.btn-treegar-outline {
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+  color: #00FFFF;
+  background: transparent;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-treegar-outline:hover {
+  background: #00FFFF;
+  color: #0f172a;
+}
+
+/* Input styles */
+.input-treegar {
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: white;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem; /* Default padding - can be overridden by Tailwind classes */
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+/* Input with icons - override padding for icon space */
+.input-treegar.input-with-icon-left {
+  padding-left: 2.5rem !important; /* 40px for icon space */
+}
+
+.input-treegar.input-with-icon-right {
+  padding-right: 3rem !important; /* 48px for icon space */
+}
+
+.input-treegar.input-with-icons-both {
+  padding-left: 2.5rem !important;
+  padding-right: 3rem !important;
+}
+
+.input-treegar:focus {
+  outline: none;
+  border-color: #00FFFF;
+  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2);
+}
+
+/* Navigation styles */
+.nav-treegar {
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #334155;
+}
+
+/* Sidebar styles */
+.sidebar-treegar {
+  background: #0f172a;
+  border-right: 1px solid #334155;
+}
+
+/* Gradient text */
+.text-gradient-cyan {
+  background: linear-gradient(90deg, #00FFFF 0%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-purple {
+  background: linear-gradient(90deg, #a855f7 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Background gradients */
+.bg-gradient-treegar {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+}
+
+.bg-gradient-cyan {
+  background: linear-gradient(90deg, #00FFFF 0%, #22d3ee 100%);
+}
+
+.bg-gradient-purple {
+  background: linear-gradient(90deg, #a855f7 0%, #c084fc 100%);
+}
+
+.bg-gradient-dark {
+  background: radial-gradient(ellipse at center, #1e293b 0%, #0f172a 70%);
+}
+
+/* Shadow utilities */
+.shadow-neon-cyan {
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+.shadow-neon-purple {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+.shadow-glow {
+  box-shadow: 0 0 40px rgba(0, 255, 255, 0.1);
+}
+
+/* Custom Keyframes */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); }
+  to { box-shadow: 0 0 30px rgba(0, 255, 255, 0.4); }
+}
+
+@keyframes particles {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-100px, -100px); }
+}
+
+/* Animation utilities */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Particle effect background */
+.particles-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.particles-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #00FFFF, transparent),
+    radial-gradient(2px 2px at 40px 70px, #a855f7, transparent),
+    radial-gradient(1px 1px at 90px 40px, #00FFFF, transparent);
+  background-repeat: repeat;
+  background-size: 100px 100px;
+  animation: particles 20s linear infinite;
+  opacity: 0.1;
+}
