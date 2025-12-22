@@ -10,6 +10,9 @@ export const queryKeys = {
   // Authentication
   profile: ['auth', 'profile'],
   
+  // Company
+  company: ['company', 'profile'],
+  
   // Dashboard
   dashboard: ['dashboard'],
   analytics: (dateRange) => ['analytics', dateRange],
@@ -141,6 +144,56 @@ export const useProfile = () => {
     retry: (failureCount, error) => {
       // Don't retry if unauthorized
       if (error?.status === 401) {
+        return false
+      }
+      return failureCount < 2
+    },
+  })
+}
+
+// ============================================================================
+// COMPANY HOOKS
+// ============================================================================
+
+// Get company profile with balances
+export const useCompanyProfile = () => {
+  const { isAuthenticated, token } = useAuth()
+
+  return useQuery({
+    queryKey: queryKeys.company,
+    queryFn: async () => {
+      if (!token || !isAuthenticated) {
+        throw new Error('Authentication required')
+      }
+
+      const response = await fetch(
+        'https://treegar-accounts-api.treegar.com:8443/api/company/auth/profile',
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch company profile')
+      }
+
+      return data.data
+    },
+    enabled: isAuthenticated && !!token,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchInterval: 1000 * 60 * 2, // Refetch every 2 minutes for balance updates
+    retry: (failureCount, error) => {
+      if (error?.message?.includes('401') || error?.message?.includes('Authentication')) {
         return false
       }
       return failureCount < 2
@@ -429,6 +482,45 @@ export const useCreateAccount = () => {
 }
 
 // ============================================================================
+// UTILITY HOOKS
+// ============================================================================
+
+// Auth status hook (enhanced with context)
+export const useAuthStatus = () => {
+  const auth = useAuth()
+  
+  return {
+    ...auth,
+    // Additional computed values
+    canAccess2FA: auth.hasOTPData && auth.otpData?.challengeId,
+    needsReauth: !auth.isAuthenticated && !auth.hasOTPData,
+  }
+}
+
+// Auto-refresh token hook
+export const useAutoRefresh = () => {
+  const queryClient = useQueryClient()
+  const { logout } = useAuth()
+  
+  return useMutation({
+    mutationFn: authAPI.refreshToken,
+    onSuccess: (data) => {
+      if (data.success && data.data?.token) {
+        localStorage.setItem('authToken', data.data.token)
+        // Invalidate all queries to refetch with new token
+        queryClient.invalidateQueries()
+      }
+    },
+    onError: (error) => {
+      console.error('Token refresh failed:', error)
+      // Handle token refresh failure (logout user)
+      logout()
+      window.location.href = '/login'
+    },
+  })
+}
+
+// ============================================================================
 // OTP UTILITY HOOKS
 // ============================================================================
 
@@ -477,45 +569,6 @@ export const useOTPTimer = (expiresAt) => {
     formattedTime: otpService.formatTimeRemaining(timeRemaining),
     isExpired: timeRemaining <= 0,
   }
-}
-
-// ============================================================================
-// UTILITY HOOKS
-// ============================================================================
-
-// Auth status hook (enhanced with context)
-export const useAuthStatus = () => {
-  const auth = useAuth()
-  
-  return {
-    ...auth,
-    // Additional computed values
-    canAccess2FA: auth.hasOTPData && auth.otpData?.challengeId,
-    needsReauth: !auth.isAuthenticated && !auth.hasOTPData,
-  }
-}
-
-// Auto-refresh token hook
-export const useAutoRefresh = () => {
-  const queryClient = useQueryClient()
-  const { logout } = useAuth()
-  
-  return useMutation({
-    mutationFn: authAPI.refreshToken,
-    onSuccess: (data) => {
-      if (data.success && data.data?.token) {
-        localStorage.setItem('authToken', data.data.token)
-        // Invalidate all queries to refetch with new token
-        queryClient.invalidateQueries()
-      }
-    },
-    onError: (error) => {
-      console.error('Token refresh failed:', error)
-      // Handle token refresh failure (logout user)
-      logout()
-      window.location.href = '/login'
-    },
-  })
 }
 
 // ============================================================================

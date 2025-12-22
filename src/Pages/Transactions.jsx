@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTransactions } from "../hooks/useApi";
+import { useTransactions, useCompanyProfile } from "../hooks/useApi";
 import StatementModal from "../Components/StatementModal";
 
 const Transactions = () => {
@@ -79,7 +79,7 @@ const Transactions = () => {
     }
   };
 
-  // Use React Query hook for transactions
+  // Use React Query hooks
   const {
     data: transactionsData,
     isLoading: loading,
@@ -87,6 +87,14 @@ const Transactions = () => {
     error,
     refetch,
   } = useTransactions(currentPage, pageSize);
+
+  // Get company profile with balances
+  const {
+    data: companyProfile,
+    isLoading: profileLoading,
+    isError: profileError,
+    refetch: refetchProfile,
+  } = useCompanyProfile();
 
   // Extract data from the response
   const transactions = transactionsData?.items || [];
@@ -104,11 +112,12 @@ const Transactions = () => {
 
   // Format currency amounts
   const formatAmount = (amount, currency = "NGN") => {
+    const numAmount = amount || 0; // Default to 0 if null/undefined
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
       currency: currency,
       minimumFractionDigits: 2,
-    }).format(amount);
+    }).format(numAmount);
   };
 
   // Format date
@@ -191,6 +200,22 @@ const Transactions = () => {
     ).length,
     totalVolume: transactions.reduce((sum, t) => sum + (t.amount || 0), 0),
   };
+
+  // Get balance cards data from company profile
+  const getBalanceCards = () => {
+    if (!companyProfile?.accountBalances) return [];
+    
+    return companyProfile.accountBalances.map(account => ({
+      type: account.accountType,
+      accountNumber: account.accountNumber,
+      availableBalance: account.availableBalance || 0,
+      ledgerBalance: account.ledgerBalance || 0,
+      currency: account.currency || 'NGN',
+      error: account.error
+    }));
+  };
+
+  const balanceCards = getBalanceCards();
 
   if (loading) {
     return (
@@ -327,6 +352,70 @@ const Transactions = () => {
           </div>
         </div>
       </div>
+
+      {/* Balance Cards */}
+      {balanceCards.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {balanceCards.map((account, index) => (
+            <div key={index} className="treegar-card-hover p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-1">
+                    {account.type} Account
+                  </h3>
+                  <p className="text-sm text-gray-400">
+                    Account: {account.accountNumber}
+                  </p>
+                </div>
+                <div className="p-3 bg-primary-500/10 rounded-lg">
+                  <span className="text-2xl">
+                    {account.type === 'Collection' ? '📥' : '📤'}
+                  </span>
+                </div>
+              </div>
+              
+              {account.error ? (
+                <div className="text-red-400 text-sm">
+                  Error: {account.error}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Available Balance</p>
+                    <p className="text-2xl font-bold text-neon-cyan">
+                      {formatAmount(account.availableBalance, account.currency)}
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Refresh button */}
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={() => refetchProfile()}
+                  disabled={profileLoading}
+                  className="text-primary-500 hover:text-primary-400 transition-colors disabled:opacity-50"
+                  title="Refresh balances"
+                >
+                  <svg
+                    className={`w-4 h-4 ${profileLoading ? 'animate-spin' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Statistics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
