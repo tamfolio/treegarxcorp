@@ -1,3 +1,31 @@
+// Global 401 Handler - Add this at the TOP of main.jsx
+const handle401 = () => {
+  console.log('🔐 Global 401 detected - redirecting to login');
+  
+  // Clear localStorage
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('token');
+  localStorage.removeItem('userData');
+  localStorage.removeItem('user');
+  localStorage.removeItem('isAuthenticated');
+  
+  // Redirect to login
+  window.location.href = '/login';
+};
+
+// Override fetch to catch 401s
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+  const response = await originalFetch(...args);
+  
+  if (response.status === 401) {
+    console.log('🚨 401 intercepted!');
+    handle401();
+  }
+  
+  return response;
+};
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
