@@ -224,6 +224,51 @@ export const useDashboardData = () => {
   })
 }
 
+export const useCompanyWalletTransactions = (page = 1, pageSize = 20) => {
+  const { isAuthenticated, token } = useAuth()
+
+  return useQuery({
+    queryKey: ['company-wallet-transactions', { page, pageSize }],
+    queryFn: async () => {
+      if (!token || !isAuthenticated) {
+        throw new Error('Authentication required')
+      }
+
+      const response = await fetch(
+        `https://treegar-accounts-api.treegar.com:8443/api/company/wallet/transactions?page=${page}&pageSize=${pageSize}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch wallet transactions')
+      }
+
+      return data.data
+    },
+    enabled: isAuthenticated && !!token,
+    keepPreviousData: true,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    retry: (failureCount, error) => {
+      if (error?.message?.includes('401') || error?.message?.includes('Authentication')) {
+        return false
+      }
+      return failureCount < 2
+    },
+  })
+}
+
 // Get analytics data with date range
 export const useAnalytics = (dateRange = '7d') => {
   const { isAuthenticated, token } = useAuth()

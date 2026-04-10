@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLogout } from "../hooks/useApi";
 import Transactions from "./Transactions";
+import CompanyTransactions from "./CompanyTransactions"; // 👈 new import
 import Accounts from "./Accounts";
 import Payouts from "./Payout";
 import Users from "./Users";
@@ -18,9 +19,9 @@ const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
   useAuthHealthCheck();
-  
+
   const currentPath = location.pathname;
-  const activeTab = currentPath.split("/")[2] || "transactions";
+  const activeTab = currentPath.split("/")[2] || "va-transactions";
 
   const { user, logout } = useAuth();
   const logoutMutation = useLogout();
@@ -34,12 +35,18 @@ const Dashboard = () => {
   const userRole = user?.companyName || "System Administrator";
   const userEmail = user?.email || "";
 
+  const [transactionsOpen, setTransactionsOpen] = useState(false);
+
   const menuItems = [
     {
       id: "transactions",
       name: "Transactions",
       icon: "💳",
       description: "Payment History",
+      children: [
+        { id: "va-transactions", name: "VA Transactions", icon: "🔹" },
+        { id: "company-transactions", name: "Company Transactions", icon: "🔸" },
+      ],
     },
     {
       id: "accounts",
@@ -70,10 +77,12 @@ const Dashboard = () => {
 
   const renderContent = () => {
     switch (activeTab) {
+      case "va-transactions":
+        return <Transactions />;
+      case "company-transactions":
+        return <CompanyTransactions />;
       case "accounts":
         return <Accounts />;
-      case "transactions":
-        return <Transactions />;
       case "payouts":
         return <Payouts />;
       case "business-payouts":
@@ -98,22 +107,20 @@ const Dashboard = () => {
     }
   };
 
-  // Calculate dropdown position
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
 
   useEffect(() => {
     if (profileDropdownOpen && profileButtonRef.current) {
       const rect = profileButtonRef.current.getBoundingClientRect();
       setDropdownPosition({
-        top: rect.bottom + 8, // 8px below the button
-        right: window.innerWidth - rect.right, // Right-aligned
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
       });
     }
   }, [profileDropdownOpen]);
 
   return (
     <div className="flex h-screen bg-gradient-treegar particles-bg">
-      {/* Click outside handler for dropdowns */}
       {(sidebarOpen || profileDropdownOpen) && (
         <div
           className={`fixed inset-0 z-30 ${sidebarOpen ? "md:hidden" : ""}`}
@@ -124,7 +131,6 @@ const Dashboard = () => {
         ></div>
       )}
 
-      {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-40 md:hidden"></div>
       )}
@@ -137,14 +143,9 @@ const Dashboard = () => {
         md:translate-x-0 md:static md:inset-0
       `}
       >
-        {/* Sidebar content - keeping original structure */}
         <div className="flex items-center justify-between h-16 px-6 bg-dark-900 border-b border-dark-700">
           <div className="flex items-center space-x-3">
-            <img
-              src="/Images/logo.png"
-              alt="Treegar X Corp"
-              className="h-8 w-8"
-            />
+            <img src="/Images/logo.png" alt="Treegar X Corp" className="h-8 w-8" />
             <div>
               <h1 className="text-sm font-bold">
                 <span className="text-gradient-cyan">TREEGAR X </span>
@@ -164,34 +165,97 @@ const Dashboard = () => {
 
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                navigate(`/dashboard/${item.id}`);
-                setSidebarOpen(false);
-              }}
-              className={`
-                w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-all duration-300 group
-                ${
-                  activeTab === item.id
-                    ? "bg-gradient-to-r from-primary-500/20 to-secondary-500/20 border-glow-cyan text-white shadow-neon-cyan"
-                    : "text-gray-400 hover:text-white hover:bg-dark-700/50"
-                }
-              `}
-            >
-              <div className="flex items-center space-x-3">
-                <span className="text-xl">{item.icon}</span>
-                <div className="text-left">
-                  <div className="font-medium">{item.name}</div>
-                  <div className="text-xs text-gray-500 group-hover:text-gray-400">
-                    {item.description}
+            <div key={item.id}>
+              {item.children ? (
+                <>
+                  {/* Parent with dropdown */}
+                  <button
+                    onClick={() => setTransactionsOpen(!transactionsOpen)}
+                    className={`
+                      w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-all duration-300 group
+                      ${
+                        activeTab.includes("transactions")
+                          ? "bg-gradient-to-r from-primary-500/20 to-secondary-500/20 border-glow-cyan text-white shadow-neon-cyan"
+                          : "text-gray-400 hover:text-white hover:bg-dark-700/50"
+                      }
+                    `}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xl">{item.icon}</span>
+                      <div className="text-left">
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-xs text-gray-500 group-hover:text-gray-400">
+                          {item.description}
+                        </div>
+                      </div>
+                    </div>
+                    <svg
+                      className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${transactionsOpen ? "rotate-180" : ""}`}
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Children */}
+                  {transactionsOpen && (
+                    <div className="ml-4 mt-1 space-y-1 border-l border-dark-600 pl-3">
+                      {item.children.map((child) => (
+                        <button
+                          key={child.id}
+                          onClick={() => {
+                            navigate(`/dashboard/${child.id}`);
+                            setSidebarOpen(false);
+                          }}
+                          className={`
+                            w-full flex items-center space-x-3 px-3 py-2 text-sm rounded-lg transition-all duration-200
+                            ${
+                              activeTab === child.id
+                                ? "text-white bg-primary-500/20"
+                                : "text-gray-400 hover:text-white hover:bg-dark-700/50"
+                            }
+                          `}
+                        >
+                          <span className="text-sm">{child.icon}</span>
+                          <span>{child.name}</span>
+                          {activeTab === child.id && (
+                            <div className="ml-auto w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    navigate(`/dashboard/${item.id}`);
+                    setSidebarOpen(false);
+                  }}
+                  className={`
+                    w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-all duration-300 group
+                    ${
+                      activeTab === item.id
+                        ? "bg-gradient-to-r from-primary-500/20 to-secondary-500/20 border-glow-cyan text-white shadow-neon-cyan"
+                        : "text-gray-400 hover:text-white hover:bg-dark-700/50"
+                    }
+                  `}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-xl">{item.icon}</span>
+                    <div className="text-left">
+                      <div className="font-medium">{item.name}</div>
+                      <div className="text-xs text-gray-500 group-hover:text-gray-400">
+                        {item.description}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              {activeTab === item.id && (
-                <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
+                  {activeTab === item.id && (
+                    <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
+                  )}
+                </button>
               )}
-            </button>
+            </div>
           ))}
         </nav>
 
@@ -227,7 +291,6 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
         <header className="nav-treegar flex items-center justify-between h-16 px-6">
           <div className="flex items-center space-x-4">
             <button
@@ -240,20 +303,18 @@ const Dashboard = () => {
             </button>
             <div>
               <h2 className="text-lg font-semibold text-white capitalize">
-                {activeTab.replace('-', ' ')}
+                {activeTab.replace(/-/g, ' ')}
               </h2>
               <p className="text-xs text-gray-400">Financial Infrastructure</p>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
-            {/* System Status */}
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
               <span className="text-xs text-green-400 font-medium">OPERATIONAL</span>
             </div>
 
-            {/* Notifications */}
             <button className="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-md transition-colors relative">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-3.5-3.5-1.5 1.5m-5 2h5l-3.5-3.5-1.5 1.5M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -261,7 +322,6 @@ const Dashboard = () => {
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
             </button>
 
-            {/* Profile Menu */}
             <div className="relative">
               <button
                 ref={profileButtonRef}
@@ -279,15 +339,14 @@ const Dashboard = () => {
                 </svg>
               </button>
 
-              {/* SUPER HIGH Z-INDEX DROPDOWN WITH INLINE STYLES */}
               {profileDropdownOpen && (
-                <div 
+                <div
                   className="fixed w-64 bg-dark-800 border border-dark-600 rounded-lg shadow-xl"
                   style={{
                     position: 'fixed',
                     top: `${dropdownPosition.top}px`,
                     right: `${dropdownPosition.right}px`,
-                    zIndex: 999999999, // Extremely high z-index
+                    zIndex: 999999999,
                     backgroundColor: '#1f2937',
                     border: '1px solid #4b5563',
                     borderRadius: '8px',
@@ -309,10 +368,7 @@ const Dashboard = () => {
 
                   <div className="p-2">
                     <button
-                      onClick={() => {
-                        setProfileDropdownOpen(false);
-                        // Add profile settings functionality later
-                      }}
+                      onClick={() => setProfileDropdownOpen(false)}
                       className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-dark-700 rounded-md transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -353,7 +409,6 @@ const Dashboard = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
           {renderContent()}
         </main>
