@@ -195,6 +195,55 @@ export const getStatusStyle = (status) => {
   }
 };
 
+// Hook to fetch company payouts via /business-payouts/list with full filter support
+export const useCompanyPayouts = (filters = {}) => {
+  const { isAuthenticated, token } = useAuth();
+  const {
+    page = 1,
+    pageSize = 20,
+    clientReference,
+    providerReference,
+    internalReference,
+    transactionReference,
+    minAmount,
+    maxAmount,
+    startDate,
+    endDate,
+    status,
+  } = filters;
+
+  return useQuery({
+    queryKey: ["company-payouts-list", filters],
+    queryFn: async () => {
+      const params = new URLSearchParams({ page, pageSize });
+      if (clientReference) params.set("clientReference", clientReference);
+      if (providerReference) params.set("providerReference", providerReference);
+      if (internalReference) params.set("internalReference", internalReference);
+      if (transactionReference) params.set("transactionReference", transactionReference);
+      if (minAmount) params.set("minAmount", minAmount);
+      if (maxAmount) params.set("maxAmount", maxAmount);
+      if (startDate) params.set("startDate", startDate);
+      if (endDate) params.set("endDate", endDate);
+      if (status) params.set("status", status);
+      const response = await apiCall(`/business-payouts/list?${params}`, token);
+      return response.data;
+    },
+    enabled: isAuthenticated && !!token,
+    keepPreviousData: true,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      if (
+        error?.message?.includes("401") ||
+        error?.message?.includes("Authentication")
+      ) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+  });
+};
+
 // Business Payouts API service object (for consistency with your other services)
 export const businessPayoutsService = {
   getBusinessPayouts: async (page = 1, pageSize = 20, token) => {

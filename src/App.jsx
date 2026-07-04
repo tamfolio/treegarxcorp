@@ -53,6 +53,7 @@ const AppContent = () => {
           <Route path="accounts" element={null} />
           <Route path="payouts" element={null} />
           <Route path="business-payouts" element={null} />
+          <Route path="company-payouts" element={null} />
           <Route path="company-tokens" element={null} />
           <Route path="users" element={null} />
         </Route>

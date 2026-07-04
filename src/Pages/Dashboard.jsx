@@ -9,6 +9,7 @@ import Payouts from "./Payout";
 import Users from "./Users";
 import BusinessPayouts from "./BusinessPayouts";
 import CompanyTokens from "./CompanyTokens";
+import CompanyPayouts from "./CompanyPayouts";
 import { useAuthHealthCheck } from "../hooks/use401tracking";
 
 const Dashboard = () => {
@@ -67,6 +68,12 @@ const Dashboard = () => {
       description: "Bulk Transfers",
     },
     {
+      id: "company-payouts",
+      name: "Company Payouts",
+      icon: "💳",
+      description: "Company Disbursements",
+    },
+    {
       id: "company-tokens",
       name: "Company Tokens",
       icon: "🔑",
@@ -87,6 +94,8 @@ const Dashboard = () => {
         return <Payouts />;
       case "business-payouts":
         return <BusinessPayouts />;
+      case "company-payouts":
+        return <CompanyPayouts />;
       case "company-tokens":
         return <CompanyTokens />;
       case "users":
