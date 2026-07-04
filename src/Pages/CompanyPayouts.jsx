@@ -1,12 +1,159 @@
 import { useState } from "react";
 import {
   useCompanyPayouts,
+  useBusinessPayout,
   formatCurrency,
   formatDate,
   getStatusStyle,
 } from "../hooks/useBusinessPayoutApi";
 import BusinessPayoutDetailsModal from "../Components/BusinessPayoutDetailsModal";
-import { useBusinessPayout } from "../hooks/useBusinessPayoutApi";
+
+// ─── Copyable Reference ───────────────────────────────────────────────────────
+const CopyRef = ({ value }) => {
+  const [copied, setCopied] = useState(false);
+
+  if (!value) return <span className="text-gray-600 text-xs font-mono">N/A</span>;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 group">
+      <span className="text-gray-300 text-xs font-mono truncate max-w-[120px]" title={value}>
+        {value.slice(0, 12)}…
+      </span>
+      <button
+        onClick={handleCopy}
+        className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-primary-400 shrink-0"
+        title={copied ? "Copied!" : value}
+      >
+        {copied ? (
+          <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+};
+
+// ─── Filter Modal ─────────────────────────────────────────────────────────────
+const FilterModal = ({ onClose, onApply, onClear, draftFilters, setDraftFilters, activeFilterCount }) => {
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div className="treegar-card p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-white">Filter Payouts</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { key: "clientReference", label: "Client Reference", placeholder: "e.g. 7729777d-d709..." },
+            { key: "providerReference", label: "Provider Reference", placeholder: "e.g. 09011026041718..." },
+            { key: "internalReference", label: "Internal Reference", placeholder: "e.g. FPAY20260629..." },
+            { key: "transactionReference", label: "Transaction Reference", placeholder: "e.g. TXN-..." },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key}>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+              <input
+                type="text"
+                value={draftFilters[key]}
+                onChange={(e) => setDraftFilters((p) => ({ ...p, [key]: e.target.value }))}
+                placeholder={placeholder}
+                className="input-treegar w-full"
+              />
+            </div>
+          ))}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Min Amount</label>
+            <input
+              type="number"
+              min="0"
+              value={draftFilters.minAmount}
+              onChange={(e) => setDraftFilters((p) => ({ ...p, minAmount: e.target.value }))}
+              placeholder="0"
+              className="input-treegar w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Max Amount</label>
+            <input
+              type="number"
+              min="0"
+              value={draftFilters.maxAmount}
+              onChange={(e) => setDraftFilters((p) => ({ ...p, maxAmount: e.target.value }))}
+              placeholder="0"
+              className="input-treegar w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+            <input
+              type="date"
+              value={draftFilters.startDate}
+              onChange={(e) => setDraftFilters((p) => ({ ...p, startDate: e.target.value }))}
+              className="input-treegar w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+            <input
+              type="date"
+              value={draftFilters.endDate}
+              onChange={(e) => setDraftFilters((p) => ({ ...p, endDate: e.target.value }))}
+              className="input-treegar w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+            <select
+              value={draftFilters.status}
+              onChange={(e) => setDraftFilters((p) => ({ ...p, status: e.target.value }))}
+              className="input-treegar w-full"
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>{s === "" ? "All Statuses" : s}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex space-x-4 pt-6">
+          {activeFilterCount > 0 && (
+            <button type="button" onClick={onClear} className="btn-treegar-outline">
+              Clear All
+            </button>
+          )}
+          <button type="button" onClick={onClose} className="flex-1 btn-treegar-outline">
+            Cancel
+          </button>
+          <button type="button" onClick={onApply} className="flex-1 btn-treegar-primary">
+            Apply Filters
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const STATUSES = ["", "Processing", "Completed", "Failed", "Reversed", "Cancelled", "Rejected"];
 
@@ -27,18 +174,21 @@ const CompanyPayouts = () => {
   const [pageSize, setPageSize] = useState(20);
   const [appliedFilters, setAppliedFilters] = useState({});
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedPayoutId, setSelectedPayoutId] = useState(null);
 
   const {
     data: payoutsData,
-    isLoading: loading,
+    isLoading,
+    isFetching,
     isError,
     error,
     refetch,
   } = useCompanyPayouts({ page: currentPage, pageSize, ...appliedFilters });
+
+  const loading = isLoading && !payoutsData;
 
   const {
     data: selectedPayout,
@@ -55,19 +205,20 @@ const CompanyPayouts = () => {
     if (newPage >= 1 && newPage <= totalPages) setCurrentPage(newPage);
   };
 
-  const handleApplyFilters = (e) => {
-    e.preventDefault();
+  const handleApplyFilters = () => {
     const active = Object.fromEntries(
       Object.entries(draftFilters).filter(([, v]) => v !== "")
     );
     setAppliedFilters(active);
     setCurrentPage(1);
+    setShowFilterModal(false);
   };
 
   const handleClearFilters = () => {
     setDraftFilters(EMPTY_FILTERS);
     setAppliedFilters({});
     setCurrentPage(1);
+    setShowFilterModal(false);
   };
 
   const activeFilterCount = Object.values(appliedFilters).filter(Boolean).length;
@@ -145,122 +296,20 @@ const CompanyPayouts = () => {
         </div>
         <div className="flex items-center space-x-3">
           <button
-            onClick={() => setShowFilters(!showFilters)}
+            onClick={() => setShowFilterModal(true)}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              showFilters || activeFilterCount > 0
+              activeFilterCount > 0
                 ? "bg-primary-500/20 border-primary-500/50 text-primary-400"
                 : "bg-dark-700 border-dark-600 text-gray-300 hover:border-primary-500/50 hover:text-white"
             }`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
             </svg>
             <span>Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</span>
           </button>
         </div>
       </div>
-
-      {/* Filter Panel */}
-      {showFilters && (
-        <div className="treegar-card p-6">
-          <form onSubmit={handleApplyFilters} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                { key: "clientReference", label: "Client Reference", placeholder: "e.g. 7729777d-d709..." },
-                { key: "providerReference", label: "Provider Reference", placeholder: "e.g. 09011026041718..." },
-                { key: "internalReference", label: "Internal Reference", placeholder: "e.g. FPAY20260629..." },
-                { key: "transactionReference", label: "Transaction Reference", placeholder: "e.g. TXN-..." },
-              ].map(({ key, label, placeholder }) => (
-                <div key={key}>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">{label}</label>
-                  <input
-                    type="text"
-                    value={draftFilters[key]}
-                    onChange={(e) => setDraftFilters((p) => ({ ...p, [key]: e.target.value }))}
-                    placeholder={placeholder}
-                    className="w-full bg-dark-700 border border-dark-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500 placeholder-gray-500"
-                  />
-                </div>
-              ))}
-
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">Min Amount</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={draftFilters.minAmount}
-                  onChange={(e) => setDraftFilters((p) => ({ ...p, minAmount: e.target.value }))}
-                  placeholder="0"
-                  className="w-full bg-dark-700 border border-dark-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500 placeholder-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">Max Amount</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={draftFilters.maxAmount}
-                  onChange={(e) => setDraftFilters((p) => ({ ...p, maxAmount: e.target.value }))}
-                  placeholder="0"
-                  className="w-full bg-dark-700 border border-dark-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500 placeholder-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">Start Date</label>
-                <input
-                  type="date"
-                  value={draftFilters.startDate}
-                  onChange={(e) => setDraftFilters((p) => ({ ...p, startDate: e.target.value }))}
-                  className="w-full bg-dark-700 border border-dark-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">End Date</label>
-                <input
-                  type="date"
-                  value={draftFilters.endDate}
-                  onChange={(e) => setDraftFilters((p) => ({ ...p, endDate: e.target.value }))}
-                  className="w-full bg-dark-700 border border-dark-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">Status</label>
-                <select
-                  value={draftFilters.status}
-                  onChange={(e) => setDraftFilters((p) => ({ ...p, status: e.target.value }))}
-                  className="w-full bg-dark-700 border border-dark-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500"
-                >
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>{s === "" ? "All Statuses" : s}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <button type="submit" className="btn-treegar-primary flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <span>APPLY FILTERS</span>
-              </button>
-              {activeFilterCount > 0 && (
-                <button
-                  type="button"
-                  onClick={handleClearFilters}
-                  className="px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-sm text-white hover:bg-dark-600 transition-colors"
-                >
-                  Clear All
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -288,7 +337,15 @@ const CompanyPayouts = () => {
       {/* Table */}
       <div className="treegar-card overflow-hidden">
         <div className="px-6 py-4 border-b border-dark-600 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white">Company Payouts</h3>
+          <div className="flex items-center space-x-3">
+            <h3 className="text-lg font-semibold text-white">Company Payouts</h3>
+            {isFetching && (
+              <svg className="animate-spin h-4 w-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            )}
+          </div>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-400">
               Page {currentPage} of {totalPages} • {totalCount} total
@@ -309,7 +366,7 @@ const CompanyPayouts = () => {
           <table className="w-full">
             <thead className="bg-dark-800/50">
               <tr>
-                {["S/N", "Payout", "Beneficiary", "Amount", "Status", "References", "Created", "Actions"].map((h) => (
+                {["S/N", "Payout", "Beneficiary", "Amount", "Status", "Client Ref", "Txn Ref", "Provider Ref", "Created", "Actions"].map((h) => (
                   <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -317,7 +374,7 @@ const CompanyPayouts = () => {
             <tbody className="divide-y divide-dark-600">
               {payouts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
+                  <td colSpan={10} className="px-6 py-12 text-center text-gray-400">
                     No payouts found{activeFilterCount > 0 ? " for the selected filters" : ""}.
                   </td>
                 </tr>
@@ -356,17 +413,13 @@ const CompanyPayouts = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-xs font-mono text-gray-400 max-w-32 space-y-1">
-                          <div className="truncate" title={payout.clientReference}>
-                            Client: {payout.clientReference?.slice(0, 8)}...
-                          </div>
-                          <div className="truncate" title={payout.transactionReference}>
-                            Txn: {payout.transactionReference || "Pending"}
-                          </div>
-                          <div className="truncate" title={payout.providerReference}>
-                            Provider: {payout.providerReference?.slice(0, 8) || "N/A"}...
-                          </div>
-                        </div>
+                        <CopyRef value={payout.clientReference} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <CopyRef value={payout.transactionReference} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <CopyRef value={payout.providerReference} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm">
@@ -437,6 +490,18 @@ const CompanyPayouts = () => {
           </div>
         </div>
       </div>
+
+      {/* Filter Modal */}
+      {showFilterModal && (
+        <FilterModal
+          onClose={() => setShowFilterModal(false)}
+          onApply={handleApplyFilters}
+          onClear={handleClearFilters}
+          draftFilters={draftFilters}
+          setDraftFilters={setDraftFilters}
+          activeFilterCount={activeFilterCount}
+        />
+      )}
 
       {/* Details Modal */}
       <BusinessPayoutDetailsModal
