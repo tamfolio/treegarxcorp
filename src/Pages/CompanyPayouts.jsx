@@ -45,115 +45,6 @@ const CopyRef = ({ value }) => {
   );
 };
 
-// ─── Filter Modal ─────────────────────────────────────────────────────────────
-const FilterModal = ({ onClose, onApply, onClear, draftFilters, setDraftFilters, activeFilterCount }) => {
-
-  return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="treegar-card p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-white">Filter Payouts</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { key: "clientReference", label: "Client Reference", placeholder: "e.g. 7729777d-d709..." },
-            { key: "providerReference", label: "Provider Reference", placeholder: "e.g. 09011026041718..." },
-            { key: "internalReference", label: "Internal Reference", placeholder: "e.g. FPAY20260629..." },
-            { key: "transactionReference", label: "Transaction Reference", placeholder: "e.g. TXN-..." },
-          ].map(({ key, label, placeholder }) => (
-            <div key={key}>
-              <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
-              <input
-                type="text"
-                value={draftFilters[key]}
-                onChange={(e) => setDraftFilters((p) => ({ ...p, [key]: e.target.value }))}
-                placeholder={placeholder}
-                className="input-treegar w-full"
-              />
-            </div>
-          ))}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Min Amount</label>
-            <input
-              type="number"
-              min="0"
-              value={draftFilters.minAmount}
-              onChange={(e) => setDraftFilters((p) => ({ ...p, minAmount: e.target.value }))}
-              placeholder="0"
-              className="input-treegar w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Max Amount</label>
-            <input
-              type="number"
-              min="0"
-              value={draftFilters.maxAmount}
-              onChange={(e) => setDraftFilters((p) => ({ ...p, maxAmount: e.target.value }))}
-              placeholder="0"
-              className="input-treegar w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
-            <input
-              type="date"
-              value={draftFilters.startDate}
-              onChange={(e) => setDraftFilters((p) => ({ ...p, startDate: e.target.value }))}
-              className="input-treegar w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">End Date</label>
-            <input
-              type="date"
-              value={draftFilters.endDate}
-              onChange={(e) => setDraftFilters((p) => ({ ...p, endDate: e.target.value }))}
-              className="input-treegar w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
-            <select
-              value={draftFilters.status}
-              onChange={(e) => setDraftFilters((p) => ({ ...p, status: e.target.value }))}
-              className="input-treegar w-full"
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>{s === "" ? "All Statuses" : s}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex space-x-4 pt-6">
-          {activeFilterCount > 0 && (
-            <button type="button" onClick={onClear} className="btn-treegar-outline">
-              Clear All
-            </button>
-          )}
-          <button type="button" onClick={onClose} className="flex-1 btn-treegar-outline">
-            Cancel
-          </button>
-          <button type="button" onClick={onApply} className="flex-1 btn-treegar-primary">
-            Apply Filters
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const STATUSES = ["", "Processing", "Completed", "Failed", "Reversed", "Cancelled", "Rejected"];
 
@@ -174,7 +65,6 @@ const CompanyPayouts = () => {
   const [pageSize, setPageSize] = useState(20);
   const [appliedFilters, setAppliedFilters] = useState({});
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
-  const [showFilterModal, setShowFilterModal] = useState(false);
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedPayoutId, setSelectedPayoutId] = useState(null);
@@ -205,20 +95,19 @@ const CompanyPayouts = () => {
     if (newPage >= 1 && newPage <= totalPages) setCurrentPage(newPage);
   };
 
-  const handleApplyFilters = () => {
+  const handleApplyFilters = (e) => {
+    e.preventDefault();
     const active = Object.fromEntries(
       Object.entries(draftFilters).filter(([, v]) => v !== "")
     );
     setAppliedFilters(active);
     setCurrentPage(1);
-    setShowFilterModal(false);
   };
 
   const handleClearFilters = () => {
     setDraftFilters(EMPTY_FILTERS);
     setAppliedFilters({});
     setCurrentPage(1);
-    setShowFilterModal(false);
   };
 
   const activeFilterCount = Object.values(appliedFilters).filter(Boolean).length;
@@ -284,31 +173,87 @@ const CompanyPayouts = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">
-            <span className="text-gradient-cyan">COMPANY </span>
-            <span className="text-gradient-purple">PAYOUTS</span>
-          </h1>
-          <p className="text-primary-500 text-sm font-medium mt-1 tracking-wider">
-            COMPANY DISBURSEMENT CENTER
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setShowFilterModal(true)}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              activeFilterCount > 0
-                ? "bg-primary-500/20 border-primary-500/50 text-primary-400"
-                : "bg-dark-700 border-dark-600 text-gray-300 hover:border-primary-500/50 hover:text-white"
-            }`}
-          >
-            <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-            </svg>
-            <span>Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</span>
-          </button>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold">
+          <span className="text-gradient-cyan">COMPANY </span>
+          <span className="text-gradient-purple">PAYOUTS</span>
+        </h1>
+        <p className="text-primary-500 text-sm font-medium mt-1 tracking-wider">
+          COMPANY DISBURSEMENT CENTER
+        </p>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="treegar-card p-6">
+        <form onSubmit={handleApplyFilters} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { key: "clientReference", label: "Client Reference", placeholder: "e.g. 7729777d-d709..." },
+              { key: "providerReference", label: "Provider Reference", placeholder: "e.g. 09011026041718..." },
+              { key: "internalReference", label: "Internal Reference", placeholder: "e.g. FPAY20260629..." },
+              { key: "transactionReference", label: "Transaction Reference", placeholder: "e.g. TXN-..." },
+            ].map(({ key, label, placeholder }) => (
+              <div key={key}>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+                <input
+                  type="text"
+                  value={draftFilters[key]}
+                  onChange={(e) => setDraftFilters((p) => ({ ...p, [key]: e.target.value }))}
+                  placeholder={placeholder}
+                  className="input-treegar w-full"
+                />
+              </div>
+            ))}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Min Amount</label>
+              <input type="number" min="0" value={draftFilters.minAmount}
+                onChange={(e) => setDraftFilters((p) => ({ ...p, minAmount: e.target.value }))}
+                placeholder="0" className="input-treegar w-full" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Max Amount</label>
+              <input type="number" min="0" value={draftFilters.maxAmount}
+                onChange={(e) => setDraftFilters((p) => ({ ...p, maxAmount: e.target.value }))}
+                placeholder="0" className="input-treegar w-full" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+              <select value={draftFilters.status}
+                onChange={(e) => setDraftFilters((p) => ({ ...p, status: e.target.value }))}
+                className="input-treegar w-full">
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>{s === "" ? "All Statuses" : s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+              <input type="date" value={draftFilters.startDate}
+                onChange={(e) => setDraftFilters((p) => ({ ...p, startDate: e.target.value }))}
+                className="input-treegar w-full" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+              <input type="date" value={draftFilters.endDate}
+                onChange={(e) => setDraftFilters((p) => ({ ...p, endDate: e.target.value }))}
+                className="input-treegar w-full" />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 pt-2">
+            <button type="submit" className="btn-treegar-primary flex items-center space-x-2">
+              <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span>Search</span>
+            </button>
+            {activeFilterCount > 0 && (
+              <button type="button" onClick={handleClearFilters}
+                className="px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-sm text-white hover:bg-dark-600 transition-colors">
+                Clear ({activeFilterCount})
+              </button>
+            )}
+          </div>
+        </form>
       </div>
 
       {/* Stats */}
@@ -490,18 +435,6 @@ const CompanyPayouts = () => {
           </div>
         </div>
       </div>
-
-      {/* Filter Modal */}
-      {showFilterModal && (
-        <FilterModal
-          onClose={() => setShowFilterModal(false)}
-          onApply={handleApplyFilters}
-          onClear={handleClearFilters}
-          draftFilters={draftFilters}
-          setDraftFilters={setDraftFilters}
-          activeFilterCount={activeFilterCount}
-        />
-      )}
 
       {/* Details Modal */}
       <BusinessPayoutDetailsModal
