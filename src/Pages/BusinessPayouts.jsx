@@ -594,7 +594,7 @@ const BusinessPayouts = () => {
                       <div className="text-sm">
                         <div className="text-white">{date}</div>
                         <div className="text-gray-400">{time}</div>
-                        {payout.completedAt && (
+                        {payout.completedAt && payout.status?.toLowerCase() === "completed" && (
                           <div className="text-green-400 text-xs">
                             Completed: {formatDate(payout.completedAt).time}
                           </div>

@@ -189,13 +189,13 @@ const BusinessPayoutDetailsModal = ({ isOpen, onClose, payout, isLoading }) => {
                       <p className="text-gray-400 text-sm">Updated At</p>
                       <p className="text-white">{formatDate(payout.updatedAt).full}</p>
                     </div>
-                    {payout.completedAt && (
+                    {payout.completedAt && payout.status?.toLowerCase() === "completed" && (
                       <div>
                         <p className="text-gray-400 text-sm">Completed At</p>
                         <p className="text-green-400">{formatDate(payout.completedAt).full}</p>
                       </div>
                     )}
-                    {payout.cancelledAt && (
+                    {payout.cancelledAt && payout.status?.toLowerCase() === "cancelled" && (
                       <div>
                         <p className="text-gray-400 text-sm">Cancelled At</p>
                         <p className="text-red-400">{formatDate(payout.cancelledAt).full}</p>
@@ -231,7 +231,7 @@ const BusinessPayoutDetailsModal = ({ isOpen, onClose, payout, isLoading }) => {
                         <p className="text-yellow-400">{payout.reversalReason}</p>
                       </div>
                     )}
-                    {payout.reversedAt && (
+                    {payout.reversedAt && payout.status?.toLowerCase() === "reversed" && (
                       <div>
                         <p className="text-gray-400 text-sm">Reversed At</p>
                         <p className="text-yellow-400">{formatDate(payout.reversedAt).full}</p>

@@ -277,7 +277,7 @@ import {
                       <p className="text-white text-sm">{formatDate(payout.completedAt).full}</p>
                     </div>
                   )}
-                  {payout.cancelledAt && (
+                  {payout.cancelledAt && payout.status?.toLowerCase() === "cancelled" && (
                     <div>
                       <p className="text-sm text-gray-400">Cancelled</p>
                       <p className="text-white text-sm">{formatDate(payout.cancelledAt).full}</p>
@@ -333,7 +333,7 @@ import {
                               <p className="text-gray-400 mb-1">Created</p>
                               <p className="text-white">{instructionDate.full}</p>
                             </div>
-                            {instruction.completedAt && (
+                            {instruction.completedAt && instruction.status?.toLowerCase() === "completed" && (
                               <div>
                                 <p className="text-gray-400 mb-1">Completed</p>
                                 <p className="text-white">{formatDate(instruction.completedAt).full}</p>
